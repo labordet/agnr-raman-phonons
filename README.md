@@ -6,7 +6,7 @@ The repository contains the programs developed for Raman spectrum treatment, Lor
 
 ## Start here
 
-Use Python 3.11. Download and unpack the research data from **<ZENODO_DATA_DOI>**. Until the record DOI is assigned, obtain the final `ZENODO_RESEARCH_DATA.zip` from the authors. Keep its internal directory structure.
+Use Python 3.11. The research-data DOI is reserved as [10.5281/zenodo.23040882](https://doi.org/10.5281/zenodo.23040882). Download and unpack the archive when the record is public, keeping its internal directory structure.
 
 ```sh
 python -m venv .venv
@@ -64,6 +64,10 @@ Run the tests with `python -m unittest discover -s tests -v`. Set `ZENODO_DATA_R
 
 ## Outputs, citation and license
 
-The data archive supplies raw and processed spectra, retained fit parameters, reference thermal-expansion inputs, published artwork and final tables. This repository supplies the code. Figure 1c uses the fitting means at 100, 100, 95, 105 and 100 K in I–V order. Figures 1–3 include manual slide assembly beyond the calculated curves. The data archive lists the source files for those figures.
+The data archive supplies raw and processed spectra, retained fit parameters, reference thermal-expansion inputs, figure source data, and final tables. This repository supplies the analysis code.
 
-Use [CITATION.cff](CITATION.cff) to cite this software and cite the associated paper and Zenodo data record when identifiers are available. The authors' original code and documentation are licensed under [CC BY 4.0](LICENSE). External reference data and software dependencies retain their own terms.
+Figure 1c uses the fitting means at 100, 100, 95, 105, and 100 K in configurations I–V, respectively. Final figure layout includes graphical assembly beyond the numerical calculations; the data archive lists the corresponding source files.
+
+Use [CITATION.cff](CITATION.cff) to cite this software, and cite the associated paper and Zenodo data record when their identifiers are available.
+
+The authors' original code and documentation are licensed under [CC BY 4.0](LICENSE). External reference data and software dependencies retain their own terms.
