@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "Please cite this software, the associated paper, and the Zenodo data record when available."
+type: software
+title: "Raman and phonon analysis of 9-armchair graphene nanoribbon arrays"
+version: 1.0.0
+license: CC-BY-4.0
+authors:
+  - family-names: "Labordet Álvarez"
+    given-names: "Ángel"
+  - family-names: "Borin Barin"
+    given-names: "Gabriela"
+  - family-names: "Calame"
+    given-names: "Michel"
+  - family-names: "Dimitrievska"
+    given-names: "Mirjana"
+keywords:
+  - Raman spectroscopy
+  - graphene nanoribbons
+  - Lorentzian fitting
+  - thermal expansion

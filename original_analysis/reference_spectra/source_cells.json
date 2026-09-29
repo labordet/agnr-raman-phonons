@@ -1,0 +1,101 @@
+[
+  {
+    "release_file": "code/original_analysis/reference_spectra/baseline_I.py",
+    "source_notebook": "../Preparing_Files.ipynb",
+    "source_notebook_sha256": "f71cc6172a54d5d02bb9a2ed2d1e597ca032a894f13770ead022e4f9e7908927",
+    "cell_index_0based": 10,
+    "cell_source_sha256": "05b16dd7b55bef8d3082bc7544300979ed5bf9c930b1d8a5300c7ca1753d2931",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/baseline_II.py",
+    "source_notebook": "../Preparing_Files.ipynb",
+    "source_notebook_sha256": "f71cc6172a54d5d02bb9a2ed2d1e597ca032a894f13770ead022e4f9e7908927",
+    "cell_index_0based": 1,
+    "cell_source_sha256": "219425b04ee2b9aa8ccef5bcc40f751f0ad1f0201d4f826e95a9c9ffb5865c71",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/baseline_III.py",
+    "source_notebook": "../Preparing_Files.ipynb",
+    "source_notebook_sha256": "f71cc6172a54d5d02bb9a2ed2d1e597ca032a894f13770ead022e4f9e7908927",
+    "cell_index_0based": 23,
+    "cell_source_sha256": "7b1ada176e0cf006d1c3027d0ac58e23c1e0f34588078fac8572d69b6594a6c4",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/baseline_IV.py",
+    "source_notebook": "../Preparing_Files.ipynb",
+    "source_notebook_sha256": "f71cc6172a54d5d02bb9a2ed2d1e597ca032a894f13770ead022e4f9e7908927",
+    "cell_index_0based": 28,
+    "cell_source_sha256": "9f6aeffd62c582547454573e9b1f8820e426d55b16ff7740bf7fb4890c2af9fd",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/baseline_V.py",
+    "source_notebook": "../Preparing_Files.ipynb",
+    "source_notebook_sha256": "f71cc6172a54d5d02bb9a2ed2d1e597ca032a894f13770ead022e4f9e7908927",
+    "cell_index_0based": 18,
+    "cell_source_sha256": "469c357fe94540c75f22280aeaf9e1e40e43eb6d3b8cdf0a05baefb9e674611a",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/normalize_I.py",
+    "source_notebook": "../SPIKES.ipynb",
+    "source_notebook_sha256": "a3086e6b8021b204bd30832b544e1ee834cfd726473c75a303e998f277798ef6",
+    "cell_index_0based": 6,
+    "cell_source_sha256": "4eace5e5044b0fcf3171c18ef75098c1bfb90d5513df0602b29e939345c81f40",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/normalize_II.py",
+    "source_notebook": "../SPIKES.ipynb",
+    "source_notebook_sha256": "a3086e6b8021b204bd30832b544e1ee834cfd726473c75a303e998f277798ef6",
+    "cell_index_0based": 1,
+    "cell_source_sha256": "f8a07905d4308d49c9f8bbb16e65fe6274ee4976e9c225762f41e9969cea411b",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/normalize_III.py",
+    "source_notebook": "../SPIKES.ipynb",
+    "source_notebook_sha256": "a3086e6b8021b204bd30832b544e1ee834cfd726473c75a303e998f277798ef6",
+    "cell_index_0based": 19,
+    "cell_source_sha256": "f2c210d6f33a8ae5fe29806398603d97de32f684c72e9b6eab17af583ef3172f",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/normalize_IV.py",
+    "source_notebook": "../SPIKES.ipynb",
+    "source_notebook_sha256": "a3086e6b8021b204bd30832b544e1ee834cfd726473c75a303e998f277798ef6",
+    "cell_index_0based": 16,
+    "cell_source_sha256": "7ffba6e7bff2b2555c9f8ff365f7c1fbcbce452a8f0f3f1fecf03fe9d72042ee",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/normalize_V.py",
+    "source_notebook": "../SPIKES.ipynb",
+    "source_notebook_sha256": "a3086e6b8021b204bd30832b544e1ee834cfd726473c75a303e998f277798ef6",
+    "cell_index_0based": 11,
+    "cell_source_sha256": "e656ea6fb0ef1360f0d20ddaecce5c69f2bc23daba59ee1ab7b7814ef73fa706",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  },
+  {
+    "release_file": "code/original_analysis/reference_spectra/select_reference_spectra.py",
+    "source_notebook": "../Plotting_Fits.ipynb",
+    "source_notebook_sha256": "4a3270cfc969077451153df934c2a6e3110a132ff08d77e78fb004ab5e6a5698",
+    "cell_index_0based": 14,
+    "cell_source_sha256": "cd75f69b746021db4d0f9731cf8b33d36a829a64455fede1288843ea781d4d21",
+    "cell_source_bytes_preserved": true,
+    "selection": "Verbatim original code cell; stored notebook outputs and unrelated cells omitted."
+  }
+]

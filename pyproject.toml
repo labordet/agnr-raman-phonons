@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agnr-raman-phonons"
+version = "1.0.0"
+description = "Raman preprocessing, fitting and thermal analysis for 9-AGNR arrays"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  {name = "Ángel Labordet Álvarez"},
+  {name = "Gabriela Borin Barin"},
+  {name = "Michel Calame"},
+  {name = "Mirjana Dimitrievska"},
+]
+dependencies = [
+  "numpy>=2.2,<3", "pandas>=2.3,<3", "scipy>=1.17,<2",
+  "matplotlib>=3.10,<4", "openpyxl>=3.1,<4", "Pillow>=12,<13",
+]
+license = {text = "CC-BY-4.0"}
+
+[project.optional-dependencies]
+fitting = ["XlsxWriter>=3,<4"]
+
+[project.scripts]
+agnr-reproduce = "paper_reproduction.reproduce_all:main"
+
+[tool.setuptools.packages.find]
+include = ["raman_tools*", "thermal_models*", "paper_reproduction*", "original_analysis*"]
+namespaces = true
