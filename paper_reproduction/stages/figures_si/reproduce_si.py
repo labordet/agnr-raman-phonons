@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import ast
-import hashlib
 import importlib.util
 import json
 import os
@@ -74,21 +73,10 @@ def main():
     from PIL import Image
 
     selections = json.loads((METADATA / "figure_selections.json").read_text(encoding="utf-8"))
-    expected = json.loads((METADATA / "figure_array_fingerprints.json").read_text(encoding="utf-8"))
-    expected_by_key = {(x["figure"], x["label"]): x for x in expected}
     report = {"numerical_arrays": [], "linewidth_fits": {}, "figures": []}
 
     def record_array(figure, label, x, *ys):
         values = np.column_stack([x, *ys]).astype("<f8")
-        sha = hashlib.sha256(values.tobytes()).hexdigest()
-        ref = expected_by_key[(figure, label)]
-        exact = sha == ref["sha256"] and list(values.shape) == ref["shape"]
-        report["numerical_arrays"].append({
-            "figure": figure, "label": label, "shape": list(values.shape),
-            "matches_recorded_array": exact,
-        })
-        if not exact:
-            raise ValueError(f"Numerical array differs: {figure} {label}")
         columns = {
             "S1": ["raman_shift_cm-1", "raw_display_intensity", "spike_cleaned_display_intensity"],
             "S2": ["raman_shift_cm-1", "spike_cleaned_intensity", "baseline_corrected_intensity", "ALS_baseline"],
@@ -96,6 +84,26 @@ def main():
             "S5": ["raman_shift_cm-1", "baseline_corrected_intensity", "G_Lorentzian_component"],
             "S7": ["raman_shift_cm-1", "normalised_intensity", "normalised_total_fit", "normalised_residual"],
         }[figure]
+        source = RELEASE / "data/derived/figure_data" / f"Fig_{figure}_{label}_numerical_data.csv"
+        released = pd.read_csv(source, float_precision="round_trip")
+        same_shape = released.shape == values.shape
+        same_columns = released.columns.tolist() == columns
+        # CSV text round trips to float64; this small absolute limit allows
+        # ordinary decimal export differences without changing the spectra.
+        tolerance = 1e-10
+        difference = (float(np.nanmax(np.abs(values - released.to_numpy(float))))
+                      if same_shape and same_columns else None)
+        matched = (same_shape and same_columns and
+                   bool(np.allclose(values, released.to_numpy(float), rtol=0,
+                                    atol=tolerance, equal_nan=True)))
+        report["numerical_arrays"].append({
+            "figure": figure, "label": label, "source_csv": str(source.relative_to(RELEASE)),
+            "shape": list(values.shape), "columns_match": same_columns,
+            "max_absolute_difference": difference, "absolute_tolerance": tolerance,
+            "matches_released_source_data": matched,
+        })
+        if not matched:
+            raise ValueError(f"Numerical source data differ: {figure} {label}; see {source}")
         pd.DataFrame(values, columns=columns).to_csv(
             output / f"{figure}_{label}_numerical_data.csv", index=False, float_format="%.17g")
 
