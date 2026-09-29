@@ -1,6 +1,6 @@
 # From spectra to paper outputs
 
-Run `python paper_reproduction/reproduce_all.py --data /path/to/ZENODO_RELEASE`. Its output directory contains stage logs and numerical checks. Paths below are relative to the unpacked Zenodo archive unless they begin with a repository directory.
+Run `python paper_reproduction/reproduce_all.py --data /path/to/ZENODO_RELEASE --output ./results`. The archive is read as input; stage logs, numerical checks and generated files go to `./results`. Input paths below are relative to the unpacked Zenodo archive; output paths are relative to the chosen result directory.
 
 | Step | Input and calculation | Program | Output |
 |---|---|---|---|

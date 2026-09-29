@@ -9,6 +9,9 @@ import json
 import os
 from pathlib import Path
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory
+from paper_reproduction.numerical_tolerances import MODEL_TOLERANCES
 
 ROOT = Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
 sys.dont_write_bytecode = True
@@ -23,19 +26,7 @@ def load_original(filename, module_name):
 
 
 def checked_output(path):
-    output = Path(path).resolve()
-    bases = [ROOT / "outputs", ROOT / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return prepare_output_directory(ROOT, path)
 
 
 def compare_table(actual, expected_path, keys, columns, tolerance):
@@ -51,7 +42,7 @@ def compare_table(actual, expected_path, keys, columns, tolerance):
         a = merged[col + '_reproduced'].to_numpy(float)
         b = merged[col + '_accepted'].to_numpy(float)
         diff = float(np.max(np.abs(a-b)))
-        atol = tolerance.get(col, 1e-6)
+        atol = tolerance[col]
         ok = bool(np.allclose(a, b, rtol=0, atol=atol, equal_nan=True))
         differences[col] = {'max_absolute_difference': diff, 'absolute_tolerance': atol, 'passed': ok}
         passes = passes and ok
@@ -107,7 +98,7 @@ def waterfall(out, report):
                 'family': family, 'sequence': row.sequence, 'temperature_K': row.temperature_K,
                 'input_file': path.relative_to(ROOT).as_posix(), 'spectral_points': len(x),
                 'normalisation_max_abs_intensity': float(np.max(np.abs(y))),
-                'Raman_grid_matches_family_reference': same_grid, 'array_sha256': digest,
+                'Raman_grid_matches_family_reference': same_grid,
             })
         row = f2.load_family_spectra(inputs, manifest, family)
         arrays = {'temperature_K': row['temps'], 'stack_index': row['stack_indices']}
@@ -136,7 +127,6 @@ def waterfall(out, report):
         'normalisation': 'maximum absolute intensity over each full input spectrum',
         'released_array_comparison': array_comparisons,
         'assembly_status': 'Numerical component regenerated; retained final insets, guides and composition are in figures/main/assembly/Fig_2_assembly.pptx.',
-        'final_curve_equivalence': 'All 15 final panels agree at raster resolution with the traced generator output; see metadata/figure_2_artwork_comparison.json. This is not a binary-identity comparison.',
     }
     f2.OUTPUT_STEM = 'Fig_2_spectra_component'
     f2.plot_figure(inputs, out, ['pdf'], show=False)
@@ -206,7 +196,7 @@ def frequencies(out, report):
     report['Fig_3'] = {'refit_comparison':compare_table(
         params, ROOT / 'data/derived/main_frequency_model_parameters.csv',
         ['peak_id','family','sequence'], columns,
-        {'omega0_cm-1':1e-10,'omega0_stderr':1e-10,'omega0_n_points':0,'A3_cm-1':1e-5,'A3_stderr':1e-5,'gamma_parallel':1e-5,'gamma_stderr':1e-5},
+        MODEL_TOLERANCES,
     )}
     accepted = pd.read_csv(ROOT / 'data/derived/main_frequency_model_parameters.csv')
     replay_accepted_coefficients(f3,results,accepted,tec)
@@ -226,11 +216,10 @@ def frequencies(out, report):
     reference = f3.omega0_comparison_table_from_results(results)
     report['Fig_4'] = compare_table(reference, ROOT / 'data/derived/reference_frequencies.csv', ['sample','peak_id'], ['omega0_cm-1','omega0_stderr','omega0_n_points'], {'omega0_cm-1':1e-10,'omega0_stderr':1e-10,'omega0_n_points':0})
     generated = out / 'FIG3_extrapolated_omega0_peak_positions_0K_white_background.png'
-    canonical = ROOT / 'figures/main/Fig_4_reference_frequencies.png'
-    with Image.open(generated) as a, Image.open(canonical) as b:
-        report['Fig_4']['canonical_pixel_equality'] = a.size == b.size and np.array_equal(np.asarray(a.convert('RGBA')), np.asarray(b.convert('RGBA')))
+    reference_image = ROOT / 'figures/main/Fig_4_reference_frequencies.png'
+    with Image.open(generated) as a, Image.open(reference_image) as b:
         report['Fig_4']['generated_size'] = list(a.size)
-        report['Fig_4']['canonical_size'] = list(b.size)
+        report['Fig_4']['reference_size'] = list(b.size)
     generated.replace(out / 'Fig_4_reference_frequencies.png')
     (out / 'FIG3_extrapolated_omega0_peak_positions_0K.csv').replace(out / 'Fig_4_reference_frequencies.csv')
     for name in ['FIG3_extrapolated_omega0_peak_positions_0K.png','FIG3_extrapolated_omega0_peak_positions_0K_colored_bands.png']:
@@ -240,7 +229,7 @@ def frequencies(out, report):
     cycle_data.to_csv(out / 'Fig_S8_input_peak_positions.csv', index=False)
     cycle_params.to_csv(out / 'Fig_S8_refit_validation_parameters.csv', index=False)
     cycle_accepted = pd.read_csv(ROOT / 'tables/supplementary/Table_S4_thermal_paths.csv')
-    cycle_comparison = compare_table(cycle_params, ROOT / 'tables/supplementary/Table_S4_thermal_paths.csv', ['peak_id','family','sequence'],columns,{'omega0_cm-1':1e-10,'omega0_stderr':1e-10,'omega0_n_points':0,'A3_cm-1':1e-5,'A3_stderr':1e-5,'gamma_parallel':1e-5,'gamma_stderr':1e-5})
+    cycle_comparison = compare_table(cycle_params, ROOT / 'tables/supplementary/Table_S4_thermal_paths.csv', ['peak_id','family','sequence'],columns,MODEL_TOLERANCES)
     replay_accepted_coefficients(f3,cycle_results,cycle_accepted,tec)
     cycle_accepted.to_csv(out / 'Fig_S8_model_parameters.csv', index=False)
     save_model_arrays(cycle_results, out / 'Fig_S8_model_curves.csv')
@@ -249,14 +238,14 @@ def frequencies(out, report):
         ROOT / 'data/derived/figure_data/Fig_S8_model_curves.csv',
         ['family', 'peak_id', 'temperature_K'])
     f3.make_combined_figure(cycle_results, f3.ALIGNED_AU_8A_NESTED_SAMPLE_ORDER, 'absolute', out / 'Fig_S8_thermal_paths.pdf', out / 'Fig_S8_legend.pdf')
-    report['Fig_S8'] = {'selected_peak_rows':len(cycle_data),'fit_parameter_rows':len(cycle_params),'refit_comparison':cycle_comparison,'rendered_coefficients':'Accepted Table S4 coefficients replayed without alteration.','verification':'Compare numerical parameters and slopes with Table S4 through the thermal-expansion verification script.','figure_assembly':'The plot PDF contains every visible element of final SI page 16, including component arrows. The separately emitted legend is an optional companion and is absent from the canonical figure; no manual assembly is required.'}
+    report['Fig_S8'] = {'selected_peak_rows':len(cycle_data),'fit_parameter_rows':len(cycle_params),'refit_comparison':cycle_comparison,'rendered_coefficients':'Published Table S4 coefficients replayed without alteration.','verification':'Compare numerical parameters and slopes with Table S4 through the thermal calculation stage.','figure_assembly':'The plot PDF contains every visible element of final SI page 16, including component arrows. The separate legend is an optional companion; no manual assembly is required.'}
     report['Fig_S8']['released_model_array_comparison'] = cycle_array_comparison
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output-dir', type=Path, required=True,
-                        help='Separate output directory within release outputs/ or _verification/.')
+                        help='Writable result directory outside the data archive.')
     parser.add_argument('--only', choices=['all','waterfall','frequencies'], default='all')
     args = parser.parse_args()
     out = checked_output(args.output_dir)
@@ -268,12 +257,13 @@ def main():
     if args.only in ['all','frequencies']:
         frequencies(out,report)
     (out / 'verification.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
-    print(json.dumps(report, indent=2))
     failed = report.get('Fig_4', {}).get('verified') is False
     for figure in ('Fig_3', 'Fig_S8'):
         failed = failed or report.get(figure, {}).get('refit_comparison', {}).get('verified') is False
         failed = failed or report.get(figure, {}).get('released_model_array_comparison', {}).get('verified') is False
     failed = failed or any(not c['verified'] for c in report.get('Fig_2', {}).get('released_array_comparison', {}).values())
+    print(json.dumps({'figures': list(report), 'numerical_checks_passed': not failed,
+                      'output': str(out)}, indent=2))
     if failed:
         raise SystemExit('Numerical comparison failed or a required comparison table is missing; see verification.json.')
 

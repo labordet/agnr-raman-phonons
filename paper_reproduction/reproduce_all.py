@@ -14,6 +14,9 @@ from pathlib import Path
 import subprocess
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paper_reproduction.output_paths import prepare_output_directory
+
 STAGES = (
     ("preprocessing", "preprocessing/reproduce_preprocessing.py", "--output"),
     ("fig1c_fitting_means", "../plot_fig1c_fitting_means.py", "--output"),
@@ -41,17 +44,8 @@ def data_directory(path: Path) -> Path:
 
 
 def output_directory(root: Path, path: Path) -> Path:
-    """Keep generated files in the data archive's designated output area."""
-    target = path.expanduser().resolve()
-    allowed = (root / "outputs", root / "_verification")
-    if any(base.resolve() != base for base in allowed):
-        raise ValueError("Output roots must not be redirected by filesystem links")
-    if not any(target.is_relative_to(base) for base in allowed):
-        raise ValueError("Output must be within the data archive's outputs/ or _verification/")
-    if target.exists() and target.resolve() != target:
-        raise ValueError("Output must not be a redirected filesystem path")
-    target.mkdir(parents=True, exist_ok=True)
-    return target
+    """Create a result folder away from the input archive."""
+    return prepare_output_directory(root, path)
 
 
 def run(data: Path, output: Path) -> dict:
@@ -60,7 +54,8 @@ def run(data: Path, output: Path) -> dict:
     here = Path(__file__).resolve().parent
     env = os.environ.copy()
     env.update(RAMAN_DATA_ROOT=str(root), PYTHONDONTWRITEBYTECODE="1",
-               MPLBACKEND="Agg", MPLCONFIGDIR=str(destination / ".matplotlib"))
+               MPLBACKEND="Agg", MPLCONFIGDIR=str(destination / ".matplotlib"),
+               PYTHONPATH=str(here.parent) + os.pathsep + env.get("PYTHONPATH", ""))
     summary = {
         "data_root": str(root),
         "method": "Replay recorded treatment; evaluate retained accepted spectral fits",
@@ -90,10 +85,10 @@ def main() -> None:
     parser.add_argument("--data", required=True, type=Path,
                         help="Directory containing the unpacked Zenodo data archive")
     parser.add_argument("--output", type=Path,
-                        help="Output directory under the data archive's outputs/ folder")
+                        help="Writable result directory outside the data archive (default: ./outputs/paper_reproduction)")
     args = parser.parse_args()
     root = data_directory(args.data)
-    summary = run(root, args.output or root / "outputs" / "github_reproduction")
+    summary = run(root, args.output or Path("outputs/paper_reproduction"))
     print(f"Completed {len(summary['stages'])} stages; see the output run_summary.json")
 
 

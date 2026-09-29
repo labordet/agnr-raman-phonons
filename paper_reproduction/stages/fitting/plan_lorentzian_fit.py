@@ -7,24 +7,14 @@ import json
 import os
 import subprocess
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory as _output_directory
 
 ROOT = Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
 
 
 def prepare_output_directory(path):
-    output = Path(path).resolve()
-    bases = [ROOT / "outputs", ROOT / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return _output_directory(ROOT, path)
 
 
 def main():
@@ -36,7 +26,7 @@ def main():
     args = parser.parse_args()
     if args.jobs < 1:
         raise ValueError("--jobs must be positive.")
-    output = prepare_output_directory(args.output or ROOT / "outputs" / ("fitting_" + args.branch))
+    output = prepare_output_directory(args.output or Path('outputs/paper_reproduction') / ('fitting_' + args.branch))
     protocol = json.loads((ROOT / "metadata/fitting_protocol.json").read_text(encoding="utf-8"))[args.branch]["config"]
     name = "cluster_fitting_current_euler.py" if args.branch == "primary" else "cluster_fitting_aligned_ro_chmid_locked.py"
     script = Path(__file__).resolve().parents[3] / "original_analysis/fitting" / name

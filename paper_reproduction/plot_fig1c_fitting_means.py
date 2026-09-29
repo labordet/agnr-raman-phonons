@@ -12,8 +12,8 @@ Run from anywhere with the plotting environment::
 
     python -B reproduce/plot_fig1c_fitting_means.py
 
-All scientific inputs remain read-only. Output must be inside release outputs/
-or _verification/; the default is outputs/fig1c_paper_panel/.
+All scientific inputs remain read-only. Results default to
+./outputs/paper_reproduction/fig1c_fitting_means/.
 """
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ def make_figure(output: Path) -> dict:
                 or treatment["als_iterations"] != 10):
             raise ValueError(f"{label}: main-series ALS settings differ from the paper")
         if label == "V" and sequence != "Spikes_Removed_DOWN_1":
-            raise ValueError("V must use the author-confirmed Heating 1 fitting path")
+            raise ValueError("V must use the Heating 1 fitting path")
         candidate_temperatures = [row["temperature_K"] for row in means
                                   if row["family"] == family and row["sequence"] == sequence]
         minimum_distance = min(abs(value - 100.0) for value in candidate_temperatures)
@@ -269,7 +269,7 @@ def make_figure(output: Path) -> dict:
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path,
-                        default=ROOT / "outputs/fig1c_paper_panel")
+                        default=Path('outputs/paper_reproduction/fig1c_fitting_means'))
     args = parser.parse_args()
     report = make_figure(args.output)
     print(f"Figure 1c ready: {report['curve_rows']} measured-grid rows, "

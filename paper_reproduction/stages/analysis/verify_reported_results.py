@@ -5,27 +5,18 @@ import os
 import argparse,json,math,os
 import numpy as np
 import pandas as pd
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory as _output_directory
 ROOT=Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
 
 def prepare_output_directory(path):
-    output = Path(path).resolve()
-    bases = [ROOT / "outputs", ROOT / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return _output_directory(ROOT, path)
 
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--output',type=Path,default=ROOT/'outputs/reported_results')
+    ap.add_argument('--output',type=Path,default=Path('outputs/paper_reproduction/reported_results'))
     args=ap.parse_args();out=prepare_output_directory(args.output)
     df=pd.read_csv(ROOT/'data/derived/peak_parameters.csv')
     fits=pd.concat([pd.read_csv(p) for p in (ROOT/'data/derived/fits').glob('*/*_long_results.csv')],ignore_index=True)

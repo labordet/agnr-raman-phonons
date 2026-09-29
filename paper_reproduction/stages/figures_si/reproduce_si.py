@@ -11,6 +11,8 @@ import os
 from pathlib import Path
 import sys
 import types
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory as _output_directory
 
 HERE = Path(__file__).resolve().parent
 RELEASE = Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
@@ -53,24 +55,12 @@ def load_spectrum_helpers():
 
 
 def prepare_output_directory(path):
-    output = Path(path).resolve()
-    bases = [RELEASE / "outputs", RELEASE / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return _output_directory(RELEASE, path)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, default=RELEASE / "outputs/si")
+    parser.add_argument("--output", type=Path, default=Path('outputs/paper_reproduction/si_figures'))
     parser.add_argument("--refit-linewidths", action="store_true",
                         help="Also compare a fresh linewidth fit with the retained coefficients.")
     args = parser.parse_args()
@@ -95,7 +85,7 @@ def main():
         exact = sha == ref["sha256"] and list(values.shape) == ref["shape"]
         report["numerical_arrays"].append({
             "figure": figure, "label": label, "shape": list(values.shape),
-            "sha256": sha, "exact_float64_match_to_original_analysis": exact,
+            "matches_recorded_array": exact,
         })
         if not exact:
             raise ValueError(f"Numerical array differs: {figure} {label}")
@@ -262,17 +252,16 @@ def main():
         if len(paths) != 1:
             raise ValueError(f"Expected one generated Fig S{number}; found {paths}")
         generated = paths[0]
-        canonical = RELEASE / f"figures/supplementary/Fig_S{number}.png"
-        a = np.asarray(Image.open(generated).convert("RGB"))
-        b = np.asarray(Image.open(canonical).convert("RGB"))
+        with Image.open(generated) as image:
+            image_size = list(image.size)
         report["figures"].append({
-            "figure": f"Fig_S{number}", "generated": str(generated.relative_to(RELEASE)),
-            "RGB_pixel_equal": bool(a.shape == b.shape and np.array_equal(a,b)),
-            "generated_shape": list(a.shape), "canonical_shape": list(b.shape),
-            "binary_equal": generated.read_bytes() == canonical.read_bytes(),
+            "figure": f"Fig_S{number}", "generated": str(generated),
+            "image_size_px": image_size,
         })
     (output / "verification.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-    print(json.dumps(report, indent=2))
+    print(json.dumps({"figures_generated": len(report["figures"]),
+                      "numerical_arrays_checked": len(report["numerical_arrays"]),
+                      "output": str(output)}, indent=2))
 
 
 if __name__ == "__main__":

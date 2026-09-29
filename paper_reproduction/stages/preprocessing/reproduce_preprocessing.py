@@ -5,25 +5,16 @@ import os
 import argparse,json,os
 import numpy as np
 import pandas as pd
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory as _output_directory
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
 
 ROOT=Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
 
 def prepare_output_directory(path):
-    output = Path(path).resolve()
-    bases = [ROOT / "outputs", ROOT / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return _output_directory(ROOT, path)
 
 
 def filesystem_path(path):
@@ -58,7 +49,7 @@ def baseline_correct(y,lam,p,n):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output',type=Path,default=ROOT/'outputs/preprocessing')
+    parser.add_argument('--output',type=Path,default=Path('outputs/paper_reproduction/preprocessing'))
     args=parser.parse_args();out=prepare_output_directory(args.output)
     records=json.loads((ROOT/'metadata/preprocessing_provenance.json').read_text(encoding='utf-8'))
     means=json.loads((ROOT/'metadata/temperature_mean_provenance.json').read_text(encoding='utf-8'))

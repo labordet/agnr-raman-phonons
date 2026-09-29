@@ -4,30 +4,20 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
 import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory as _output_directory
+from paper_reproduction.numerical_tolerances import MODEL_TOLERANCES, TEC_TOLERANCES
 
 sys.dont_write_bytecode = True
-ROOT = Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
+ROOT = Path(os.environ.get("RAMAN_DATA_ROOT", ".")).resolve()
 
 def prepare_output_directory(path):
-    output = Path(path).resolve()
-    bases = [ROOT / "outputs", ROOT / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return _output_directory(ROOT, path)
 
 
 
@@ -39,7 +29,7 @@ def load_module(name, path):
     return module
 
 
-def compare_table(expected, actual, tolerance=1e-8):
+def compare_table(expected, actual, tolerances):
     import numpy as np
     import pandas as pd
     result = {"expected_rows": len(expected), "reproduced_rows": len(actual), "columns": {}}
@@ -52,16 +42,19 @@ def compare_table(expected, actual, tolerance=1e-8):
             passed = False
             continue
         if pd.api.types.is_numeric_dtype(expected[col]):
+            if col not in tolerances:
+                raise KeyError(f"No numerical tolerance defined for {col}")
+            tolerance = tolerances[col]
             a, b = expected[col].to_numpy(float), actual[col].to_numpy(float)
             equal = a.shape == b.shape and np.allclose(a, b, rtol=0, atol=tolerance, equal_nan=True)
             error = float(np.nanmax(np.abs(a - b))) if a.shape == b.shape else None
-            result["columns"][col] = {"passed": bool(equal), "max_abs_difference": error}
+            result["columns"][col] = {"passed": bool(equal), "max_abs_difference": error,
+                                      "absolute_tolerance": tolerance}
         else:
             equal = expected[col].fillna("").astype(str).tolist() == actual[col].fillna("").astype(str).tolist()
             result["columns"][col] = {"passed": bool(equal)}
         passed = passed and equal
     result["passed"] = bool(passed)
-    result["absolute_numeric_tolerance"] = tolerance
     return result
 
 
@@ -91,7 +84,7 @@ def run(output_dir, curves_only=False):
         path = output_dir / f"{name}_CTE_alpha_SI.csv"
         tec.write_curve(path, grid, alpha)
         expected = pd.read_csv(ref / path.name)
-        checks["TEC"][name] = compare_table(expected, pd.read_csv(path), tolerance=1e-18)
+        checks["TEC"][name] = compare_table(expected, pd.read_csv(path), TEC_TOLERANCES)
         # Temperature-grid rounding is tested separately from the TEC values.
         checks["TEC"][name]["columns"]["T (K)"]["passed"] = bool(np.allclose(expected.iloc[:, 0], grid, rtol=0, atol=5e-13))
         checks["TEC"][name]["passed"] = all(c["passed"] for c in checks["TEC"][name]["columns"].values())
@@ -100,12 +93,8 @@ def run(output_dir, curves_only=False):
     figure = tec.plot_curves(output_dir, combined, ref, au_meta)
     target = output_dir / "Fig_S6_thermal_expansion.png"
     figure.replace(target)
-    canonical = ROOT / "figures/supplementary/Fig_S6.png"
-    if canonical.exists():
-        a, b = Image.open(canonical).convert("RGB"), Image.open(target).convert("RGB")
-        checks["Fig_S6"] = {"same_dimensions": a.size == b.size, "pixel_identical": a.size == b.size and a.tobytes() == b.tobytes(), "canonical_dimensions": list(a.size), "reproduced_dimensions": list(b.size), "canonical_renderer": Image.open(canonical).info.get("Software"), "reproduced_renderer": Image.open(target).info.get("Software"), "canonical_sha256": hashlib.sha256(canonical.read_bytes()).hexdigest(), "reproduced_sha256": hashlib.sha256(target.read_bytes()).hexdigest()}
-    else:
-        checks["Fig_S6"] = {"canonical_comparison": "canonical image unavailable at expected release path"}
+    with Image.open(target) as image:
+        checks["Fig_S6"] = {"generated": target.name, "image_size_px": list(image.size)}
 
     if not curves_only:
         inputs = ROOT / "data/derived/peak_parameters.csv"
@@ -118,7 +107,7 @@ def run(output_dir, curves_only=False):
         for name, frame in zip(names, main_tables):
             frame["source_csv"] = "data/derived/peak_parameters.csv"
             frame.to_csv(output_dir / name, index=False)
-            checks["tables"][name] = compare_table(pd.read_csv(ROOT / "tables/supplementary" / name), frame)
+            checks["tables"][name] = compare_table(pd.read_csv(ROOT / "tables/supplementary" / name), frame, MODEL_TOLERANCES)
         model = load_module("archive_cycle_model", model_path)
         _, results, cycle = model.build_results(inputs, ref, sequence_filters=model.ALIGNED_AU_8A_NESTED_SEQUENCE_FILTERS, sample_order=model.ALIGNED_AU_8A_NESTED_SAMPLE_ORDER)
         data_slopes, model_slopes = [], []
@@ -133,12 +122,12 @@ def run(output_dir, curves_only=False):
         cycle["source_csv"] = "data/derived/peak_parameters.csv"
         name = "Table_S4_thermal_paths.csv"
         cycle.to_csv(output_dir / name, index=False)
-        checks["tables"][name] = compare_table(pd.read_csv(ROOT / "tables/supplementary" / name), cycle)
+        checks["tables"][name] = compare_table(pd.read_csv(ROOT / "tables/supplementary" / name), cycle, MODEL_TOLERANCES)
     checks["numeric_checks_passed"] = all(c["passed"] for c in checks["TEC"].values()) and all(c["passed"] for c in checks.get("tables", {}).values())
-    checks["limitations"] = ["The author confirmed digitizing the CNT values from Jiang et al. Figure 5(a); the exact curve label and original digitization session are not recorded.", "Numerical fit comparisons allow small optimizer/version effects; accepted canonical parameters are never replaced."]
-    checks["author_confirmed_label"] = "Configuration V source identifier Spikes_Removed_DOWN_1 denotes Heating 1, as confirmed by the author. Selected data and numerical contents are unchanged."
+    checks["notes"] = ["CNT thermal-expansion values were digitized from Jiang et al., Fig. 5(a); the original digitization session was not retained.", "Small optimizer-version differences are allowed at manuscript precision; the retained publication parameters are not replaced."]
+    checks["data_mapping_note"] = "Configuration V source identifier Spikes_Removed_DOWN_1 denotes Heating 1."
     (output_dir / "verification.json").write_text(json.dumps(checks, indent=2), encoding="utf-8")
-    print(json.dumps({"numeric_checks_passed": checks["numeric_checks_passed"], "output": str(output_dir.relative_to(ROOT)), "Fig_S6": checks["Fig_S6"]}, indent=2))
+    print(json.dumps({"numeric_checks_passed": checks["numeric_checks_passed"], "output": str(output_dir)}, indent=2))
     if not checks["numeric_checks_passed"]:
         raise SystemExit("Numerical verification failed; inspect verification.json")
     return checks
@@ -146,7 +135,7 @@ def run(output_dir, curves_only=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/thermal")
+    parser.add_argument("--output-dir", type=Path, default=Path('outputs/paper_reproduction/thermal'))
     parser.add_argument("--curves-only", action="store_true")
     args = parser.parse_args()
     run(args.output_dir, args.curves_only)

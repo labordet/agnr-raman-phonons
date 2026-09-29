@@ -12,30 +12,20 @@ import csv
 import hashlib
 import json
 import os
+import sys
 
 import numpy as np
 from scipy.sparse import diags
 from scipy.sparse.linalg import spsolve
+sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+from paper_reproduction.output_paths import prepare_output_directory
 
 ROOT = Path(os.environ["RAMAN_DATA_ROOT"]).resolve()
 TOLERANCE = 5e-10
 
 
 def output_directory(root, path):
-    root = Path(root).resolve()
-    output = Path(path).resolve()
-    bases = [root / "outputs", root / "_verification"]
-    if any(base.resolve() != base for base in bases):
-        raise ValueError("Output roots must not be redirected by filesystem links.")
-    if not any(output.is_relative_to(base) for base in bases):
-        raise ValueError("Output must be inside release outputs/ or _verification/.")
-    output.mkdir(parents=True, exist_ok=True)
-    for directory, subdirectories, files in os.walk(output, followlinks=False):
-        for name in subdirectories + files:
-            item = Path(directory) / name
-            if item.resolve() != item:
-                raise ValueError("Output directory contains a redirected filesystem path.")
-    return output
+    return prepare_output_directory(root, path)
 
 
 def als_baseline(y, lam, p, niter, clipping=False):
@@ -77,7 +67,7 @@ def process_raw_input(root, raw_record, settings):
 def reproduce_reference(root=ROOT, out=None):
     """Write recomputed values and verify them against the retained workbook export."""
     root = Path(root).resolve()
-    out = output_directory(root, out or root / 'outputs/reference_spectra')
+    out = output_directory(root, out or Path('outputs/paper_reproduction/reference_spectra'))
     metadata = json.loads((root / 'metadata/figure_1_spectrum_provenance.json').read_text(encoding='utf-8'))
     settings = {item['configuration']: item for item in metadata['processing']}
     with (root / metadata['exported_data']['release_csv']).open(encoding='utf-8', newline='') as stream:
@@ -132,7 +122,7 @@ def reproduce_reference(root=ROOT, out=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output', type=Path, default=ROOT / 'outputs/reference_spectra')
+    parser.add_argument('--output', type=Path, default=Path('outputs/paper_reproduction/reference_spectra'))
     arguments = parser.parse_args()
     result = reproduce_reference(ROOT, arguments.output)
     maximum = max(row['max_absolute_intensity_difference'] for row in result['spectra'])

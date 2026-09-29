@@ -19,4 +19,4 @@
 | `original_analysis/exploration/` | Exploratory analysis | Additional comparisons and inspection tools, not final parameter generators |
 | `examples/` | Reusable example | Small demonstrations independent of the full paper run |
 
-The original programs are retained as research source. The paper runner uses portable stage programs that read relative paths within the unpacked data archive and write to its separate output area. Only the launcher under `paper_reproduction/stages/fitting/` starts new global peak fitting, and only with `--run`.
+The original programs are retained as research source. The paper runner reads from the unpacked data archive and writes to a separate result directory chosen with `--output`. Only the launcher under `paper_reproduction/stages/fitting/` starts new global peak fitting, and only with `--run`.
